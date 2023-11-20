@@ -1,5 +1,5 @@
 class Ship {
-    constructor(length) {
+    constructor(length=1) {
         this.length = length;
         this.hitCount = 0;
     }
@@ -13,3 +13,4 @@ class Ship {
     }
 }
 
+module.exports = {Ship}
