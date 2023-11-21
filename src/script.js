@@ -89,5 +89,38 @@ class Gameboard {
     }
 }
 
+class Player {
+    constructor(maxX, maxY) {
+        this.alreadyShot = [];
+        this.maxX = maxX
+        this.maxY = maxY
+    }
+
+    getInput() { //add mocking
+        let input = prompt(`Which field do you want to shoot (0-${this.maxX},0-${this.maxY}"): `);
+        
+        input = input.split(",").map((el, id) => {
+            el = Number(el.trim());
+            if (isNaN(el)) throw new Error("You must enter two numbers in format <number1>, <number2>!");
+            else if (id === 0 && el > this.maxX) 
+                throw new Error(`X coordination must be in range 0-${this.maxX}`);
+            else if (id === 1 && el > this.maxY) 
+                throw new Error(`Y coordination must be in range 0-${this.maxY}`);
+            return el;
+        })
+
+        if (input.length !== 2) 
+            throw new Error("You must enter two numbers in format <number1>, <number2>!")
+
+        const formattedInput = input.join("_");
+
+        if (this.alreadyShot.includes(formattedInput))
+            throw new Error(`Coordinates ${input} already shot!`);
+
+
+        this.alreadyShot.push(formattedInput);
+        return input
+    }
+}
 
 module.exports = {Ship, Gameboard}
