@@ -147,3 +147,29 @@ test("recieveAttack - Already attacked", () => {
 
     expect(() => gameboard.recieveAttack(0, 0)).toThrow("Already attacked")
 })
+
+//Gameboard - all ships sunk
+
+test("allShipsSunk - true", () => {
+    const gameboard = new Gameboard(4, 4);
+    const ship1 = new Ship(2, false);
+    const ship2 = new Ship(1, true);
+    
+    gameboard.placeShip(ship1, 0, 0);
+    gameboard.placeShip(ship2, 3, 3);
+
+    gameboard.recieveAttack(0, 0);
+    gameboard.recieveAttack(0, 1);
+    gameboard.recieveAttack(3, 3);
+
+    expect(gameboard.allShipsSunk()).toBeTruthy();
+})
+
+test("allShipsSunk - false", () => {
+    const gameboard = new Gameboard(2, 2);
+    const ship = new Ship(1, true);
+
+    gameboard.placeShip(ship, 0, 0);
+
+    expect(gameboard.allShipsSunk()).toBeFalsy();
+})
