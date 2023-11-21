@@ -123,4 +123,27 @@ class Player {
     }
 }
 
+class Computer {
+    constructor(maxX, maxY) { //refactor later with using of inheritance
+        this.alreadyShot = [];
+        if (!maxX || !maxY || typeof maxX !== "number" || typeof maxY !== "number") 
+            throw new Error("maxX and maxY must be passed as 2 integers")
+        this.maxX = maxX;
+        this.maxY = maxY;
+    }
+
+    getInput() {
+        let randomCoords;
+
+        do {
+            randomCoords = 
+            `${Math.floor(Math.random() * this.maxX)}_${Math.floor(Math.random() * this.maxY)}}`
+        } while(this.alreadyShot.includes(randomCoords))
+
+        this.alreadyShot.push(randomCoords);
+        
+        return randomCoords;
+    }
+}
+
 module.exports = {Ship, Gameboard}
