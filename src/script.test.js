@@ -1,5 +1,7 @@
 const {Ship, Gameboard} = require("./script")
 
+//Ship
+
 test("Ship assigns length", () => {
     const ship = new Ship(2);
     expect(ship.length).toBe(2);
@@ -29,6 +31,8 @@ test("Ship can be sunk", () => {
     expect(ship.isSunk()).toBeTruthy();
 })
 
+//Gameboard
+
 test("Gameboard creates board", () => {
     const gameboard = new Gameboard(2, 3);
 
@@ -38,6 +42,8 @@ test("Gameboard creates board", () => {
         [0, 0]
     ])
 })
+
+//Gameboard - placing ship
 
 test("Gameboard places ship", () => {
     const gameboard = new Gameboard();
@@ -53,12 +59,20 @@ test("Gameboard places ship", () => {
     ])
 })
 
-test("Gameboard must have correct coordinates", () => {
+test("Gameboard must have correct coordinates (ship fits onto the boat)", () => {
     const gameboard = new Gameboard();
     const ship = new Ship(2, false);
 
     expect(() => gameboard.placeShip(ship, 0, 4)).toThrow("Invalid coordinates")
 })
+
+test("Gameboard must have correct coordinates (not letter)", () => {
+    const gameboard = new Gameboard();
+    const ship = new Ship(2, false);
+
+    expect(() => gameboard.placeShip(ship, "a", "b")).toThrow("Coordinates must be numbers")
+})
+
 
 test("Gameboard must have coordinates", () => {
     const gameboard = new Gameboard();
@@ -71,4 +85,65 @@ test("Gameboard must have ship", () => {
     const gameboard = new Gameboard();
     const ship = new Ship();
     expect(() => gameboard.placeShip()).toThrow("Ship required")
+})
+
+//Gameboard - recieve attack
+
+test("recieveAttack coordinates are undefined", () => {
+    const gameboard = new Gameboard();
+    
+    expect(() => gameboard.recieveAttack()).toThrow("Invalid coordinates")
+})
+
+test("recieveAttack coorinates aren't numbers", () => {
+    const gameboard = new Gameboard();
+
+    expect(() => gameboard.recieveAttack("a", "b")).toThrow("Invalid coordinates")
+})
+
+test("recieveAttack coordinates are out of range", () => {
+    const gameboard = new Gameboard(4, 4);
+
+    expect(() => gameboard.recieveAttack(10, 10)).toThrow("Invalid coordinates");
+})
+
+test("recieveAttack - board changes (ship is hit)", () => {
+    const gameboard = new Gameboard(4, 4);
+    const ship = new Ship();
+
+    gameboard.placeShip(ship, 0, 0);
+    gameboard.recieveAttack(0, 0);
+
+    expect(gameboard.board[0][0]).toBe(2);
+})
+
+test("recieveAttack - board changes (no ship)", () => {
+    const gameboard = new Gameboard(4, 4);
+    const ship = new Ship();
+
+    gameboard.placeShip(ship, 0, 0);
+    gameboard.recieveAttack(1, 1);
+
+    expect(gameboard.board[1][1]).toBe(1);
+}) 
+
+
+test("recieveAttack - ship is hit", () => {
+    const gameboard = new Gameboard(4, 4);
+    const ship = new Ship();
+
+    gameboard.placeShip(ship, 0, 0);
+    gameboard.recieveAttack(0, 0);
+
+    expect(ship.hitCount).toBe(1);
+})
+
+test("recieveAttack - Already attacked", () => {
+    const gameboard = new Gameboard(4, 4);
+    const ship = new Ship();
+
+    gameboard.placeShip(ship, 0, 0);
+    gameboard.recieveAttack(0, 0);
+
+    expect(() => gameboard.recieveAttack(0, 0)).toThrow("Already attacked")
 })
