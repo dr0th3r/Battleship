@@ -21,7 +21,7 @@ class Ship {
 }
 
 class Gameboard {
-    constructor(columns=5, rows=5, boardContainer, setupListeners = false) {
+    constructor(columns=5, rows=5, boardContainer, setupListeners = false, game = null) {
         this.board = this.#createBoard(columns, rows);
         /** this.board representation
          * 0 - no ship, not searched
@@ -33,6 +33,10 @@ class Gameboard {
         this.boardContainer = boardContainer;
         this.interactable = true;
         this.setupListeners = setupListeners;
+        this.game;
+        if (this.setupListeners) {
+            this.game = game;
+        }
 
         this.renderBoard();
     }
@@ -75,9 +79,6 @@ class Gameboard {
             const x_coord = Math.floor(Math.random() * columnCount);
             const y_coord = Math.floor(Math.random() * rowCount);
 
-            console.log(x_coord);
-            console.log(y_coord);
-
             const ship = new Ship(2, true);
 
             if (ship.isHorizontal && x_coord - 1 + ship.length < columnCount) {
@@ -89,8 +90,6 @@ class Gameboard {
             }
         }
         
-        console.log(this.board);
-
         this.renderBoard();
 
     }
@@ -134,7 +133,11 @@ class Gameboard {
                 
                 if (this.setupListeners) {
                     fieldEl.addEventListener("click", () => {
-                        this.interactable && this.recieveAttack(j, i);
+                        if (this.interactable) {
+                            const hit = this.recieveAttack(j, i);
+                            console.log(hit);
+                            !hit && this.game.takeTurn();
+                        }
                     })
                 }
             }
@@ -142,8 +145,6 @@ class Gameboard {
     }
 
     createField(field) {
-        console.log(field);
-
         const fieldEl = document.createElement("div");
         fieldEl.className = "field";
 
@@ -158,6 +159,7 @@ class Gameboard {
 
     recieveAttack(x, y) {
         if (x === undefined || y === undefined  
+            || isNaN(x) || isNaN(y)
             || typeof x !== "number" || typeof y !== "number"
             || x >= this.board[0].length || y >= this.board.length
         ) {
@@ -167,19 +169,32 @@ class Gameboard {
 
         if (field === 1 || field === 2) {
             throw new Error("Already attacked");
-        } else if (field === 0) {
-            this.board[y][x] = 1
+        } else if (field === 0) {        
+            this.board[y][x] = 1;
+
+            this.renderBoard(); //optimize later
+    
+            if (this.allShipsSunk() && this.game) {
+                setTimeout(() => alert("victory"), 0);
+            } else if (this.allShipsSunk()) {
+                setTimeout(() => alert("defeat", 0))
+            }
+
+            return false;
         } else { //field === ship
             this.board[y][x]?.hit();
             this.board[y][x] = 2;
-        }
 
-        this.renderBoard(); //optimize later
+            this.renderBoard(); //optimize later
     
-        if (this.allShipsSunk()) {
-            setTimeout(() => alert("defeat"), 0)
-        }
+            if (this.allShipsSunk() && this.game) {
+                setTimeout(() => alert("victory"), 0);
+            } else if (this.allShipsSunk()) {
+                setTimeout(() => alert("defeat", 0))
+            }
 
+            return true;
+        }
     }
 
     allShipsSunk() {
@@ -194,14 +209,15 @@ class Gameboard {
 }
 
 class Player {
-    constructor(maxX, maxY) {
-        this.alreadyShot = [];
-        this.maxX = maxX;
-        this.maxY = maxY;
+    constructor(gameboard) {
+        this.gameboard = gameboard;
     }
 
-    setInteractivity(gameboard) {
-        gameboard.interactable = !gameboard.interactable;
+    isOnTurn() {
+        this.gameboard.interactable = true;
+    }
+    isNotOnTurn() {
+        this.gameboard.interactable = false;
     }
 }
 
@@ -219,29 +235,54 @@ class Computer {
 
         do {
             randomCoords = 
-            `${Math.floor(Math.random() * this.maxX)}_${Math.floor(Math.random() * this.maxY)}}`
+            `${Math.floor(Math.random() * this.maxX)}_${Math.floor(Math.random() * this.maxY)}`
         } while(this.alreadyShot.includes(randomCoords))
 
         this.alreadyShot.push(randomCoords);
+
         
-        return randomCoords;
+        return randomCoords.split("_").map(coord => Number(coord));
     }
 }
 
+//game setup
+const playerBoard = document.getElementById("player-board");
+const computerBoard = document.getElementById("computer-board");
 
 
-while (true) {
-    const playerBoard = document.getElementById("player-board");
-    const computerBoard = document.getElementById("computer-board");
+const rowCount = 5
+const columnCount = 5
 
-    const playerGameboard = new Gameboard(5, 5, playerBoard, true);
-    const computerGameboard = new Gameboard(5, 5, computerBoard, false);
+const playerGameboard = new Gameboard(rowCount, columnCount, playerBoard, false);
 
-    playerGameboard.setupBoard();
+const player = new Player(playerGameboard);
+const pc = new Computer(rowCount, columnCount);
 
+class Game {
+    constructor(player, pc, playerGameboard, playerPlayingFirst = true) {
+        this.player = player;
+        this.pc = pc;
+        this.playerGameboard = playerGameboard
+        this.playerOnTurn = playerPlayingFirst
+    }
 
-
-    break;
+    takeTurn() {
+        this.playerOnTurn = !this.playerOnTurn;
+        if (this.playerOnTurn) {
+            this.player.isOnTurn();
+        } else {
+            this.player.isNotOnTurn();
+            while (this.playerGameboard.recieveAttack(...this.pc.getRandomCoordinations()));
+            this.takeTurn();
+        }
+    }
 }
+
+const game = new Game(player, pc, playerGameboard, true);
+
+const computerGameboard = new Gameboard(rowCount, columnCount, computerBoard, true, game);
+playerGameboard.setupBoard();
+computerGameboard.setupBoard();
+
 
 module.exports = {Ship, Gameboard}
