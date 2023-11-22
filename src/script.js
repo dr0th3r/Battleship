@@ -1,3 +1,9 @@
+const COUNT_OF_3x1_SHIPS = 1;
+
+const COUNT_OF_1x2_SHIPS = 2;
+
+const COUNT_OF_1x1_SHIPS = 3;
+
 class Ship {
     constructor(length = 1, isHorizontal = true) {
         this.length = length;
@@ -15,14 +21,20 @@ class Ship {
 }
 
 class Gameboard {
-    constructor(columns=5, rows=5) {
-        this.board = this.#createBoard(columns, rows)
+    constructor(columns=5, rows=5, boardContainer, setupListeners = false) {
+        this.board = this.#createBoard(columns, rows);
         /** this.board representation
          * 0 - no ship, not searched
          * 1 - no ship, searched
          * 2 - ship, found
          * other - reference to ship
-         */
+        */
+    
+        this.boardContainer = boardContainer;
+        this.interactable = true;
+        this.setupListeners = setupListeners;
+
+        this.renderBoard();
     }
 
     #createBoard(columns, rows) {
@@ -35,6 +47,52 @@ class Gameboard {
         }
 
         return board
+    }
+
+    setupBoard() {
+        const rowCount = this.board.length;
+        const columnCount = this.board[0].length;
+
+        let i = 0;
+        while (i < COUNT_OF_1x1_SHIPS) {
+            const x_coord = Math.floor(Math.random() * columnCount);
+            const y_coord = Math.floor(Math.random() * rowCount);
+
+            const ship = new Ship(1, true);
+
+            if (ship.isHorizontal && x_coord - 1 + ship.length < columnCount) {
+                this.placeShip(ship, x_coord, y_coord)
+                i++;
+            } else if (!ship.isHorizontal && y_coord - 1 + ship.length < rowCount) {
+                this.placeShip(ship, x_coord, y_coord);
+                i++;
+            }
+        } 
+
+
+        i = 0;
+        while (i < COUNT_OF_1x2_SHIPS) {
+            const x_coord = Math.floor(Math.random() * columnCount);
+            const y_coord = Math.floor(Math.random() * rowCount);
+
+            console.log(x_coord);
+            console.log(y_coord);
+
+            const ship = new Ship(2, true);
+
+            if (ship.isHorizontal && x_coord - 1 + ship.length < columnCount) {
+                this.placeShip(ship, x_coord, y_coord)
+                i++;
+            } else if (!ship.isHorizontal && y_coord - 1 + ship.length < rowCount) {
+                this.placeShip(ship, x_coord, y_coord);
+                i++;
+            }
+        }
+        
+        console.log(this.board);
+
+        this.renderBoard();
+
     }
 
     //add validation for adjecent squares
@@ -58,6 +116,46 @@ class Gameboard {
         }
     }
 
+    renderBoard() {
+        this.boardContainer.innerHTML = "";
+
+        const rowCount = this.board.length;
+        const columnCount = this.board[0].length;
+
+        this.boardContainer.style = `
+            display: grid;
+            grid-template-columns: repeat(${columnCount}, 100px)
+        `
+
+        for (let i = 0; i < rowCount; i++) {
+            for (let j = 0; j < columnCount; j++) {
+                const fieldEl = this.createField(this.board[i][j]);
+                this.boardContainer.append(fieldEl);
+                
+                if (this.setupListeners) {
+                    fieldEl.addEventListener("click", () => {
+                        this.interactable && this.recieveAttack(j, i);
+                    })
+                }
+            }
+        }
+    }
+
+    createField(field) {
+        console.log(field);
+
+        const fieldEl = document.createElement("div");
+        fieldEl.className = "field";
+
+        if (field === 1 || field === 2) {
+            fieldEl.className = "field red";
+        } else if (field instanceof Ship) {
+            fieldEl.className = "field ship";
+        }
+
+        return fieldEl;
+    }
+
     recieveAttack(x, y) {
         if (x === undefined || y === undefined  
             || typeof x !== "number" || typeof y !== "number"
@@ -76,12 +174,18 @@ class Gameboard {
             this.board[y][x] = 2;
         }
 
+        this.renderBoard(); //optimize later
+    
+        if (this.allShipsSunk()) {
+            setTimeout(() => alert("defeat"), 0)
+        }
+
     }
 
     allShipsSunk() {
         for (const row of this.board) {
-            for (const column of row) {
-                if (column instanceof Ship) return false;
+            for (const field of row) {
+                if (field instanceof Ship) return false;
             }
         }
 
@@ -92,34 +196,12 @@ class Gameboard {
 class Player {
     constructor(maxX, maxY) {
         this.alreadyShot = [];
-        this.maxX = maxX
-        this.maxY = maxY
+        this.maxX = maxX;
+        this.maxY = maxY;
     }
 
-    getInput() { //add mocking
-        let input = prompt(`Which field do you want to shoot (0-${this.maxX},0-${this.maxY}"): `);
-        
-        input = input.split(",").map((el, id) => {
-            el = Number(el.trim());
-            if (isNaN(el)) throw new Error("You must enter two numbers in format <number1>, <number2>!");
-            else if (id === 0 && el > this.maxX) 
-                throw new Error(`X coordination must be in range 0-${this.maxX}`);
-            else if (id === 1 && el > this.maxY) 
-                throw new Error(`Y coordination must be in range 0-${this.maxY}`);
-            return el;
-        })
-
-        if (input.length !== 2) 
-            throw new Error("You must enter two numbers in format <number1>, <number2>!")
-
-        const formattedInput = input.join("_");
-
-        if (this.alreadyShot.includes(formattedInput))
-            throw new Error(`Coordinates ${input} already shot!`);
-
-
-        this.alreadyShot.push(formattedInput);
-        return input
+    setInteractivity(gameboard) {
+        gameboard.interactable = !gameboard.interactable;
     }
 }
 
@@ -132,7 +214,7 @@ class Computer {
         this.maxY = maxY;
     }
 
-    getInput() {
+    getRandomCoordinations() {
         let randomCoords;
 
         do {
@@ -144,6 +226,22 @@ class Computer {
         
         return randomCoords;
     }
+}
+
+
+
+while (true) {
+    const playerBoard = document.getElementById("player-board");
+    const computerBoard = document.getElementById("computer-board");
+
+    const playerGameboard = new Gameboard(5, 5, playerBoard, true);
+    const computerGameboard = new Gameboard(5, 5, computerBoard, false);
+
+    playerGameboard.setupBoard();
+
+
+
+    break;
 }
 
 module.exports = {Ship, Gameboard}
