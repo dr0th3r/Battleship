@@ -34,9 +34,7 @@ class Gameboard {
         this.interactable = true;
         this.setupListeners = setupListeners;
         this.game;
-        if (this.setupListeners) {
-            this.game = game;
-        }
+        this.game = game;
 
         this.renderBoard();
     }
@@ -174,10 +172,19 @@ class Gameboard {
 
             this.renderBoard(); //optimize later
     
-            if (this.allShipsSunk() && this.game) {
-                setTimeout(() => alert("victory"), 0);
+            if (this.allShipsSunk() && this.setupListeners) {
+                setTimeout(() => {
+                    console.log(this.game.gameStatusEl);
+                    this.game.gameStatusEl.innerText = "Victory";
+                    this.game.startGame();
+                }, 0);
             } else if (this.allShipsSunk()) {
-                setTimeout(() => alert("defeat", 0))
+                setTimeout(() => {
+                    console.log(this.game.gameStatusEl);
+                    this.game.gameStatusEl.innerText = "Defeat";
+                    this.game.startGame();
+                    return false;
+                }, 0)
             }
 
             return false;
@@ -187,11 +194,21 @@ class Gameboard {
 
             this.renderBoard(); //optimize later
     
-            if (this.allShipsSunk() && this.game) {
-                setTimeout(() => alert("victory"), 0);
+            if (this.allShipsSunk() && this.setupListeners) {
+                setTimeout(() => {
+                    console.log(this.game.gameStatusEl);
+                    this.game.gameStatusEl.innerText = "Victory";
+                    this.game.startGame();
+                }, 0);
             } else if (this.allShipsSunk()) {
-                setTimeout(() => alert("defeat", 0))
+                setTimeout(() => {
+                    console.log(this.game.gameStatusEl);
+                    this.game.gameStatusEl.innerText = "Defeat";
+                    this.game.startGame();
+                    return false;
+                }, 0)
             }
+
 
             return true;
         }
@@ -248,22 +265,20 @@ class Computer {
 //game setup
 const playerBoard = document.getElementById("player-board");
 const computerBoard = document.getElementById("computer-board");
-
+const gameStatusEl = document.getElementById("game-status")
 
 const rowCount = 5
 const columnCount = 5
 
-const playerGameboard = new Gameboard(rowCount, columnCount, playerBoard, false);
 
-const player = new Player(playerGameboard);
-const pc = new Computer(rowCount, columnCount);
 
 class Game {
-    constructor(player, pc, playerGameboard, playerPlayingFirst = true) {
-        this.player = player;
-        this.pc = pc;
-        this.playerGameboard = playerGameboard
-        this.playerOnTurn = playerPlayingFirst
+    constructor(gameStatusEl) {
+        this.player;
+        this.pc;
+        this.playerGameboard;
+        this.playerOnTurn;
+        this.gameStatusEl = gameStatusEl;
     }
 
     takeTurn() {
@@ -276,13 +291,27 @@ class Game {
             this.takeTurn();
         }
     }
+
+    startGame() {
+        const playerGameboard = new Gameboard(rowCount, columnCount, playerBoard, false, this);
+        const computerGameboard = new Gameboard(rowCount, columnCount, computerBoard, true, this);
+
+        const player = new Player(playerGameboard);
+        const pc = new Computer(rowCount, columnCount);
+
+        playerGameboard.setupBoard();
+        computerGameboard.setupBoard(); 
+        
+        this.player = player;
+        this.pc = pc;
+        this.playerGameboard = playerGameboard;
+        this.playerOnTurn = true;
+    }
 }
 
-const game = new Game(player, pc, playerGameboard, true);
+const game = new Game(gameStatusEl);
+game.startGame();
 
-const computerGameboard = new Gameboard(rowCount, columnCount, computerBoard, true, game);
-playerGameboard.setupBoard();
-computerGameboard.setupBoard();
 
 
 module.exports = {Ship, Gameboard}
